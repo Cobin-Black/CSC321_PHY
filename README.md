@@ -1,4 +1,4 @@
-# CSC321_PHY_Phase1
+# CSC321_PHY
 This is the first part of creating the PHY language for Principle of Programming Languages. This is including Tokenization, Parsing, and making test functions for our program.
 
 PHY is a languge to try and help make physics calculations easier for anyone. Since physics has many different variables and formulas this languge it to help make sure to keep track of everything and calculate for the user.
@@ -32,3 +32,12 @@ AST (ast_nodes.py): Defines the data structures (nodes) for the Abstract Syntax 
   
   ### <br> &nbsp;&nbsp; Invalid:  &nbsp;&nbsp;&nbsp; <img width="1059" height="52" alt="image" src="https://github.com/user-attachments/assets/f440dd09-eaea-44c8-82af-ac1bcd288b2c" />
 
+
+## How To Run:
+ 1. You need to download the project since it is its own language
+ 2. Once you have it downloaded double click Run_PHY_IDE.bat to start the program
+    <br> What Should Come Up: <img width="1199" height="801" alt="image" src="https://github.com/user-attachments/assets/1e2b9d7e-c920-418a-8c8c-088138197e4a" />
+
+## Extra Help:
+You can check out the Function Reference Menu that will show you all the built in functions that will help you with solving certain problems
+ <br> What Should Come Up: <img width="698" height="572" alt="image" src="https://github.com/user-attachments/assets/9eff0eb6-a5f8-4070-ae6c-c3b9209004a9" />
