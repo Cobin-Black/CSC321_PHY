@@ -1,11 +1,14 @@
-from ast_nodes import Program, AssignmentStatement, PrintStatement, BinaryExpression, IntegerLiteral, Identifier, ForLoopStatement
+from ast_nodes import (
+    Program, AssignmentStatement, PrintStatement,
+    BinaryExpression, IntegerLiteral, Identifier, FunctionCall
+)
 
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos = 0
 
-    def current(self): 
+    def current(self):
         return self.tokens[self.pos]
 
     def eat(self, type):
@@ -13,7 +16,10 @@ class Parser:
             token = self.current()
             self.pos += 1
             return token
-        raise SyntaxError(f"Expected {type}, got {self.current().type} at token {self.pos} ('{self.current().value}')")
+        raise SyntaxError(
+            f"Expected {type}, got {self.current().type} "
+            f"at token {self.pos} ('{self.current().value}')"
+        )
 
     def parse(self):
         statements = []
@@ -27,27 +33,6 @@ class Parser:
             statements.append(self.parse_statement())
         return Program(statements)
 
-    def parse_for(self):
-        self.eat('FOR')
-        self.eat('LPAREN')
-        var_name = self.eat('IDENTIFIER').value
-        self.eat('IN')
-        self.eat('RANGE')
-        self.eat('LPAREN')
-        # We'll assume range(end) for simplicity
-        end_val = self.parse_expr() 
-        self.eat('RPAREN')
-        self.eat('RPAREN')
-        
-        self.eat('LBRACE')
-        body = []
-        while self.current().type != 'RBRACE':
-            body.append(self.parse_statement())
-        self.eat('RBRACE')
-        
-        # Default start at 0 for now
-        return ForLoopStatement(Identifier(var_name), IntegerLiteral("0"), end_val, body)
-
     def parse_statement(self):
         t = self.current().type
         if t == 'PRINT':
@@ -55,42 +40,23 @@ class Parser:
             e = self.parse_expr()
             self.eat('SEMICOLON')
             return PrintStatement(e)
-        if t == 'FOR':               # <--- ADD THIS
-            return self.parse_for()
         return self.parse_assignment()
 
-    def parse_for(self):
-        self.eat('FOR')
-        self.eat('LPAREN')
-        var_name = self.eat('IDENTIFIER').value
-        self.eat('IN')
-        self.eat('RANGE')
-        self.eat('LPAREN')
-        end_val = self.parse_expr()
-        self.eat('RPAREN')
-        self.eat('RPAREN')
-        self.eat('LBRACE')
-        body = []
-        while self.current().type != 'RBRACE':
-            body.append(self.parse_statement())
-        self.eat('RBRACE')
-        return ForLoopStatement(Identifier(var_name), IntegerLiteral("0"), end_val, body)
-
     def parse_assignment(self):
-        m = self.eat(self.current().type).value if self.current().type in ('GIVEN', 'LET') else None
-        tk = self.eat('TYPE_KW').value if self.current().type == 'TYPE_KW' else None
-        
-        # FIX: Allow 'g' or 'm' to be variable names even if they are units
+        mode = self.eat(self.current().type).value if self.current().type in ('GIVEN', 'LET') else None
+        type_kw = self.eat('TYPE_KW').value if self.current().type == 'TYPE_KW' else None
+
+        # Allow unit tokens (g, kg, meter …) to be used as variable names
         if self.current().type in ('IDENTIFIER', 'UNIT'):
             name = self.eat(self.current().type).value
         else:
-            self.eat('IDENTIFIER') # This will trigger the standard error
-            
+            self.eat('IDENTIFIER')  # triggers the standard error message
+
         self.eat('EQUALS')
-        e = self.parse_expr()
+        expr = self.parse_expr()
         self.eat('SEMICOLON')
-        return AssignmentStatement(Identifier(name), e, m, tk)
-        
+        return AssignmentStatement(Identifier(name), expr, mode, type_kw)
+
     def parse_expr(self):
         node = self.parse_term()
         while self.current().type in ('PLUS', 'MINUS'):
@@ -99,7 +65,6 @@ class Parser:
         return node
 
     def parse_term(self):
-        # This calls parse_factor. If parse_factor is missing, it crashes.
         node = self.parse_factor()
         while self.current().type in ('STAR', 'SLASH'):
             op = self.eat(self.current().type).value
@@ -108,31 +73,46 @@ class Parser:
 
     def parse_factor(self):
         token = self.current()
-        
-        # Handle Time (e.g., 00:05:00)
+
+        # Time literal  e.g. 00:05:00
         if token.type == 'TIME_LITERAL':
             return IntegerLiteral(self.eat('TIME_LITERAL').value)
-        
-        # Handle Numbers with optional Units
+
+        # Numeric literal with optional unit  e.g. 50kg  or  9.8
         if token.type in ('INT_LITERAL', 'FLOAT_LITERAL'):
             val = self.eat(token.type).value
             unit = None
-            # If the very next thing is a UNIT, eat it now!
             if self.current().type == 'UNIT':
                 unit = self.eat('UNIT').value
-            # If it's an IDENTIFIER that SHOULD have been a unit, eat it too!
-            elif self.current().type == 'IDENTIFIER' and self.current().value in ['kg', 'g', 'meter', 'secs', 'N', 'J', 'W', 'k']:
+            elif self.current().type == 'IDENTIFIER' and self.current().value in (
+                'kg', 'g', 'meter', 'secs', 'N', 'J', 'W', 'k'
+            ):
                 unit = self.eat('IDENTIFIER').value
-                
             return IntegerLiteral(val, unit)
-            
-        if token.type == 'IDENTIFIER':
-            return Identifier(self.eat('IDENTIFIER').value)
-        
+
+        # Identifier, unit-as-variable (e.g. `g`), or type-keyword-as-function (e.g. `work(…)`)
+        if token.type in ('IDENTIFIER', 'UNIT', 'TYPE_KW'):
+            name = self.eat(token.type).value
+            if self.current().type == 'LPAREN':
+                # Built-in function call:  name(arg1, arg2, ...)
+                self.eat('LPAREN')
+                args = []
+                if self.current().type != 'RPAREN':
+                    args.append(self.parse_expr())
+                    while self.current().type == 'COMMA':
+                        self.eat('COMMA')
+                        args.append(self.parse_expr())
+                self.eat('RPAREN')
+                return FunctionCall(name, args)
+            return Identifier(name)
+
+        # Parenthesised sub-expression
         if token.type == 'LPAREN':
             self.eat('LPAREN')
             node = self.parse_expr()
             self.eat('RPAREN')
             return node
-            
-        raise SyntaxError(f"Unexpected token {token.type} ('{token.value}') at token {self.pos}")
+
+        raise SyntaxError(
+            f"Unexpected token {token.type} ('{token.value}') at token {self.pos}"
+        )

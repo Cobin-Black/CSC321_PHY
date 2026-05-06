@@ -6,15 +6,14 @@ class Node:
 
 class Program(Node):
     def __init__(self, statements):
-        self.statements = statements # List of Statement nodes
+        self.statements = statements
 
 class AssignmentStatement(Node):
     def __init__(self, identifier, expression, mode=None, type_kw=None):
-        self.identifier = identifier  # Identifier node
-        self.expression = expression  # BinaryExpression or Literal
-        # Optional metadata for PHY
-        self.mode = mode              # 'given' or 'let'
-        self.type_kw = type_kw        # 'mass', 'accel', etc.
+        self.identifier = identifier
+        self.expression = expression
+        self.mode = mode
+        self.type_kw = type_kw
 
 class PrintStatement(Node):
     def __init__(self, expression):
@@ -28,18 +27,14 @@ class BinaryExpression(Node):
 
 class IntegerLiteral(Node):
     def __init__(self, value, unit=None):
-        # We store the value (can be int or time string)
-        self.value = value 
-        # Unit is stored here to keep PHY functionality 
-        self.unit = unit 
+        self.value = value
+        self.unit = unit
 
 class Identifier(Node):
     def __init__(self, name):
         self.name = name
 
-class ForLoopStatement(Node):
-    def __init__(self, identifier, start_expr, end_expr, body):
-        self.identifier = identifier  # The 'i'
-        self.start_expr = start_expr  # usually 0
-        self.end_expr = end_expr      # the limit
-        self.body = body
+class FunctionCall(Node):
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args  # List of expression nodes

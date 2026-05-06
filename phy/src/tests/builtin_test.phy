@@ -1,0 +1,13 @@
+given mass m = 10;
+given accel a = 9.8;
+let force F = newton(m, a);
+print F;
+let velocity v = 5;
+let energy KE = ke(m, v);
+print KE;
+let mass raw = 2500;
+let mass kg2 = g_to_kg(raw);
+print kg2;
+let length dist = 10;
+let length dm = km_to_m(dist);
+print dm;
