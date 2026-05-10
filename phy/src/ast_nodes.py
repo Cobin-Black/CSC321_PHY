@@ -38,3 +38,14 @@ class FunctionCall(Node):
     def __init__(self, name, args):
         self.name = name
         self.args = args  # List of expression nodes
+
+class IfExpression(Node):
+    """
+    Functional if-then-else expression.
+    Both branches are required and the whole thing evaluates to a value.
+    Syntax:  if(condition) then expr else expr
+    """
+    def __init__(self, condition, then_expr, else_expr):
+        self.condition  = condition
+        self.then_expr  = then_expr
+        self.else_expr  = else_expr

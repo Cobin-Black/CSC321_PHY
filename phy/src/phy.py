@@ -1,7 +1,9 @@
 import sys
+import math
 from ast_nodes import (
     Program, AssignmentStatement, PrintStatement,
-    BinaryExpression, IntegerLiteral, Identifier, FunctionCall
+    BinaryExpression, IntegerLiteral, Identifier, FunctionCall,
+    IfExpression
 )
 from lexer import Lexer
 from parser import Parser
@@ -12,6 +14,38 @@ from parser import Parser
 # fn receives a list of {'val': float, 'unit': str} dicts, one per argument.
 # ─────────────────────────────────────────────
 BUILTIN_FUNCTIONS = {
+
+        # ── Math / Trigonometry ──────────────────────────────────────
+    'sin': {
+        'args': 1, 'params': ['x'],
+        'desc': 'sin(x) — sine, x in radians',
+        'fn': lambda a: {'val': math.sin(a[0]['val']), 'unit': None},
+    },
+    'cos': {
+        'args': 1, 'params': ['x'],
+        'desc': 'cos(x) — cosine, x in radians',
+        'fn': lambda a: {'val': math.cos(a[0]['val']), 'unit': None},
+    },
+    'tan': {
+        'args': 1, 'params': ['x'],
+        'desc': 'tan(x) — tangent, x in radians',
+        'fn': lambda a: {'val': math.tan(a[0]['val']), 'unit': None},
+    },
+    'asin': {
+        'args': 1, 'params': ['x'],
+        'desc': 'asin(x) — inverse sine, returns radians',
+        'fn': lambda a: {'val': math.asin(a[0]['val']), 'unit': 'rad'},
+    },
+    'acos': {
+        'args': 1, 'params': ['x'],
+        'desc': 'acos(x) — inverse cosine, returns radians',
+        'fn': lambda a: {'val': math.acos(a[0]['val']), 'unit': 'rad'},
+    },
+    'atan': {
+        'args': 1, 'params': ['x'],
+        'desc': 'atan(x) — inverse tangent, returns radians',
+        'fn': lambda a: {'val': math.atan(a[0]['val']), 'unit': 'rad'},
+    },
 
     # ── Physics: Mechanics ──────────────────────────────────────
     'newton': {
@@ -206,6 +240,41 @@ BUILTIN_FUNCTIONS = {
         'desc': 'Pounds-force → Newtons  (×4.44822)',
         'fn': lambda a: {'val': a[0]['val'] * 4.44822, 'unit': 'N'},
     },
+    'c_to_k': {
+    'args': 1, 'params': ['celsius'],
+    'desc': 'Celsius → Kelvin  (C + 273.15)',
+    'fn': lambda a: {'val': a[0]['val'] + 273.15, 'unit': 'K'},
+    },
+
+    'k_to_c': {
+        'args': 1, 'params': ['kelvin'],
+        'desc': 'Kelvin → Celsius  (K - 273.15)',
+        'fn': lambda a: {'val': a[0]['val'] - 273.15, 'unit': 'C'},
+    },
+
+    'c_to_f': {
+        'args': 1, 'params': ['celsius'],
+        'desc': 'Celsius → Fahrenheit  (C * 9/5 + 32)',
+        'fn': lambda a: {'val': a[0]['val'] * 9/5 + 32, 'unit': 'F'},
+    },
+
+    'f_to_c': {
+        'args': 1, 'params': ['fahrenheit'],
+        'desc': 'Fahrenheit → Celsius  ((F - 32) * 5/9)',
+        'fn': lambda a: {'val': (a[0]['val'] - 32) * 5/9, 'unit': 'C'},
+    },
+
+    'f_to_k': {
+        'args': 1, 'params': ['fahrenheit'],
+        'desc': 'Fahrenheit → Kelvin  ((F - 32) * 5/9 + 273.15)',
+        'fn': lambda a: {'val': (a[0]['val'] - 32) * 5/9 + 273.15, 'unit': 'K'},
+    },
+
+    'k_to_f': {
+        'args': 1, 'params': ['kelvin'],
+        'desc': 'Kelvin → Fahrenheit  ((K - 273.15) * 9/5 + 32)',
+        'fn': lambda a: {'val': (a[0]['val'] - 273.15) * 9/5 + 32, 'unit': 'F'},
+    },
 }
 
 
@@ -214,7 +283,38 @@ BUILTIN_FUNCTIONS = {
 # ─────────────────────────────────────────────
 class Interpreter:
     def __init__(self):
-        self.variables = {}
+        self.variables = {
+            # Mathematical constants
+            'pi': {
+                'val': 3.141592653589793,
+                'unit': None
+            },
+            'e': {
+                'val': 2.718281828459045,
+                'unit': None
+            },
+
+            'grav': {
+                'val': 9.81,
+                'unit': 'm/s^2'
+            },
+            'c': {
+                'val': 299792458,
+                'unit': 'm/s'
+            },
+            'G': {
+                'val': 6.67430e-11,
+                'unit': 'm^3/kg/s^2'
+            },
+            'h': {
+                'val': 6.62607015e-34,
+                'unit': 'J*s'
+            },
+            'k_b': {
+                'val': 1.380649e-23,
+                'unit': 'J/K'
+            }
+        }
 
     def evaluate(self, node):
         if isinstance(node, IntegerLiteral):
@@ -232,9 +332,41 @@ class Interpreter:
         if isinstance(node, FunctionCall):
             return self._call_builtin(node.name, [self.evaluate(a) for a in node.args])
 
+        # Functional if-then-else — evaluates to whichever branch is chosen
+        if isinstance(node, IfExpression):
+            condition = self.evaluate(node.condition)
+            if condition['val']:
+                return self.evaluate(node.then_expr)
+            else:
+                return self.evaluate(node.else_expr)
+
         if isinstance(node, BinaryExpression):
             left  = self.evaluate(node.left)
             right = self.evaluate(node.right)
+
+            if node.operator == '==':
+                return {'val': left['val'] == right['val'], 'unit': None}
+
+            if node.operator == '!=':
+                return {'val': left['val'] != right['val'], 'unit': None}
+
+            if node.operator == '>':
+                return {'val': left['val'] > right['val'], 'unit': None}
+
+            if node.operator == '<':
+                return {'val': left['val'] < right['val'], 'unit': None}
+
+            if node.operator == '>=':
+                return {'val': left['val'] >= right['val'], 'unit': None}
+
+            if node.operator == '<=':
+                return {'val': left['val'] <= right['val'], 'unit': None}
+
+            if node.operator == '&&':
+                return {'val': left['val'] and right['val'], 'unit': None}
+
+            if node.operator == '||':
+                return {'val': left['val'] or right['val'], 'unit': None}
 
             if node.operator == '*':
                 u1 = left['unit'] or ''
@@ -313,6 +445,14 @@ def print_ast(node, indent=0):
         print(f"{p}FunctionCall ({node.name}, {len(node.args)} arg(s))")
         for arg in node.args:
             print_ast(arg, indent + 2)
+    elif isinstance(node, IfExpression):
+        print(f"{p}IfExpression")
+        print(f"{p}  condition:")
+        print_ast(node.condition, indent + 2)
+        print(f"{p}  then:")
+        print_ast(node.then_expr, indent + 2)
+        print(f"{p}  else:")
+        print_ast(node.else_expr, indent + 2)
 
 
 # ─────────────────────────────────────────────
