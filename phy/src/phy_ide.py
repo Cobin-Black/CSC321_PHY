@@ -255,6 +255,7 @@ class PhyIDE:
         self.editor.bind('<<Modified>>', self._on_change)
         self.editor.bind('<KeyRelease>', self._on_key)
         self.editor.bind('<Configure>', self.line_numbers.redraw)
+        self.editor.bind('<Return>', self._auto_indent)
 
         # Default starter code
         self._insert_starter()
@@ -309,6 +310,19 @@ print converted;
 
     def _on_key(self, _=None):
         self.line_numbers.redraw()
+
+    def _auto_indent(self, _=None):
+        # Get the full content of the current line up to the cursor
+        current_line = self.editor.get('insert linestart', 'insert lineend')
+        # Measure how many leading spaces/tabs the current line has
+        stripped = current_line.lstrip()
+        indent = current_line[:len(current_line) - len(stripped)]
+        # If the line ends with { add one extra indent level (4 spaces)
+        if current_line.rstrip().endswith('{'):
+            indent += '    '
+        self.editor.insert('insert', '\n' + indent)
+        self.line_numbers.redraw()
+        return 'break'  # stop tkinter from also inserting a plain newline
 
     def _editor_yscroll(self, *args):
         self.editor.yview(*args)
