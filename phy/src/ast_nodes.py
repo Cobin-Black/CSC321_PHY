@@ -38,3 +38,14 @@ class FunctionCall(Node):
     def __init__(self, name, args):
         self.name = name
         self.args = args  # List of expression nodes
+
+class BooleanExpression(Node):
+    def __init__(self, left, operator, right):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+class IfStatement(Node):
+    def __init__(self, condition, statements):
+        self.condition = condition
+        self.statements = statements
