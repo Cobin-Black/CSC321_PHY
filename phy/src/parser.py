@@ -1,6 +1,7 @@
 from ast_nodes import (
     Program, AssignmentStatement, PrintStatement,
-    BinaryExpression, IntegerLiteral, Identifier, FunctionCall
+    BinaryExpression, IntegerLiteral, Identifier, FunctionCall,
+    IfStatement
 )
 
 class Parser:
@@ -35,11 +36,16 @@ class Parser:
 
     def parse_statement(self):
         t = self.current().type
+
         if t == 'PRINT':
             self.eat('PRINT')
             e = self.parse_expr()
             self.eat('SEMICOLON')
             return PrintStatement(e)
+
+        if t == 'IF':
+            return self.parse_if()
+
         return self.parse_assignment()
 
     def parse_assignment(self):
@@ -57,11 +63,41 @@ class Parser:
         self.eat('SEMICOLON')
         return AssignmentStatement(Identifier(name), expr, mode, type_kw)
 
-    def parse_expr(self):
+    def parse_if(self):
+        self.eat('IF')
+        self.eat('LPAREN')
+        condition = self.parse_expr()
+        self.eat('RPAREN')
+
+        self.eat('LBRACE')
+
+        statements = []
+        while self.current().type != 'RBRACE':
+            statements.append(self.parse_statement())
+
+        self.eat('RBRACE')
+
+        return IfStatement(condition, statements)
+    
+    def parse_arith_expr(self):
         node = self.parse_term()
         while self.current().type in ('PLUS', 'MINUS'):
             op = self.eat(self.current().type).value
             node = BinaryExpression(node, op, self.parse_term())
+        return node
+    
+    def parse_expr(self):
+        node = self.parse_arith_expr()
+
+        while self.current().type in (
+            'EQEQ', 'NOTEQ',
+            'GT', 'LT',
+            'GTE', 'LTE',
+            'AND', 'OR'
+        ):
+            op = self.eat(self.current().type).value
+            node = BinaryExpression(node, op, self.parse_arith_expr())
+
         return node
 
     def parse_term(self):
@@ -85,7 +121,7 @@ class Parser:
             if self.current().type == 'UNIT':
                 unit = self.eat('UNIT').value
             elif self.current().type == 'IDENTIFIER' and self.current().value in (
-                'kg', 'g', 'meter', 'secs', 'N', 'J', 'W', 'k'
+                'kg', 'g', 'meter', 'secs', 'N', 'J', 'W', 'k', 'K', 'C', 'F', 'rad'
             ):
                 unit = self.eat('IDENTIFIER').value
             return IntegerLiteral(val, unit)
