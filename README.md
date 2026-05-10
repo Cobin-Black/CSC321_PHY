@@ -48,6 +48,7 @@ AST (ast_nodes.py): Defines the data structures (nodes) for the Abstract Syntax 
  1. You need to download the project since it is its own language
  2. Once you have it downloaded double click Run_PHY_IDE.bat to start the program
     <br> What Should Come Up: <img width="1199" height="801" alt="image" src="https://github.com/user-attachments/assets/1e2b9d7e-c920-418a-8c8c-088138197e4a" />
+    <br> Video Link: https://www.youtube.com/watch?v=ZdD_i9eHmSA
 
 ## Extra Help:
 You can check out the Function Reference Menu that will show you all the built in functions that will help you with solving certain problems
