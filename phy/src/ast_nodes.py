@@ -39,13 +39,13 @@ class FunctionCall(Node):
         self.name = name
         self.args = args  # List of expression nodes
 
-class BooleanExpression(Node):
-    def __init__(self, left, operator, right):
-        self.left = left
-        self.operator = operator
-        self.right = right
-
-class IfStatement(Node):
-    def __init__(self, condition, statements):
-        self.condition = condition
-        self.statements = statements
+class IfExpression(Node):
+    """
+    Functional if-then-else expression.
+    Both branches are required and the whole thing evaluates to a value.
+    Syntax:  if(condition) then expr else expr
+    """
+    def __init__(self, condition, then_expr, else_expr):
+        self.condition  = condition
+        self.then_expr  = then_expr
+        self.else_expr  = else_expr

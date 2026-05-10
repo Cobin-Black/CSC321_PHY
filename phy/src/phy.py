@@ -3,7 +3,7 @@ import math
 from ast_nodes import (
     Program, AssignmentStatement, PrintStatement,
     BinaryExpression, IntegerLiteral, Identifier, FunctionCall,
-    IfStatement
+    IfExpression
 )
 from lexer import Lexer
 from parser import Parser
@@ -332,6 +332,14 @@ class Interpreter:
         if isinstance(node, FunctionCall):
             return self._call_builtin(node.name, [self.evaluate(a) for a in node.args])
 
+        # Functional if-then-else — evaluates to whichever branch is chosen
+        if isinstance(node, IfExpression):
+            condition = self.evaluate(node.condition)
+            if condition['val']:
+                return self.evaluate(node.then_expr)
+            else:
+                return self.evaluate(node.else_expr)
+
         if isinstance(node, BinaryExpression):
             left  = self.evaluate(node.left)
             right = self.evaluate(node.right)
@@ -403,12 +411,6 @@ class Interpreter:
             res = self.evaluate(node.expression)
             unit_str = f" {res['unit']}" if res['unit'] else ''
             print(f"RESULT: {res['val']}{unit_str}")
-        elif isinstance(node, IfStatement):
-            condition = self.evaluate(node.condition)
-
-            if condition['val']:
-                for stmt in node.statements:
-                    self.execute(stmt)
 
 
 # ─────────────────────────────────────────────
@@ -443,6 +445,14 @@ def print_ast(node, indent=0):
         print(f"{p}FunctionCall ({node.name}, {len(node.args)} arg(s))")
         for arg in node.args:
             print_ast(arg, indent + 2)
+    elif isinstance(node, IfExpression):
+        print(f"{p}IfExpression")
+        print(f"{p}  condition:")
+        print_ast(node.condition, indent + 2)
+        print(f"{p}  then:")
+        print_ast(node.then_expr, indent + 2)
+        print(f"{p}  else:")
+        print_ast(node.else_expr, indent + 2)
 
 
 # ─────────────────────────────────────────────
