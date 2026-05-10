@@ -48,9 +48,9 @@ HIGHLIGHT_RULES = [
     # order matters — more specific first
     ('comment',  r'//[^\n]*'),
     ('number',   r'\b\d+(?:\.\d+)?\b'),
-    ('keyword',  r'\b(?:givens|given|let|print)\b'),
-    ('type_kw',  r'\b(?:mass|accel|velocity|length|power|temp|force)\b'),
-    ('unit',     r'\b(?:kg|g|secs|J|N|meter|k|W)\b'),
+    ('keyword',  r'\b(?:givens|given|let|print|if|then|else)\b'),
+    ('type_kw',  r'\b(?:mass|accel|velocity|length|power|temp|force|time|energy|work)\b'),
+    ('unit',     r'\b(?:kg|g|secs|J|N|meter|k|W|C|F|K|rad)\b'),
     ('builtin',  r'\b(?:' + '|'.join(re.escape(n) for n in BUILTIN_FUNCTIONS) + r')\b'),
 ]
 
@@ -135,9 +135,10 @@ class PhyIDE:
         # Help
         help_menu = tk.Menu(menubar, tearoff=0, bg=BG_SIDEBAR, fg=FG_DEFAULT,
                             activebackground=CURSOR_COL, activeforeground='#ffffff')
-        help_menu.add_command(label='Function Reference', command=self.show_function_ref)
-        help_menu.add_command(label='Language Guide',    command=self.show_language_guide)
-        help_menu.add_command(label='About PHY',         command=self.show_about)
+        help_menu.add_command(label='Function Reference',     command=self.show_function_ref)
+        help_menu.add_command(label='Values & Types Reference', command=self.show_values_ref)
+        help_menu.add_command(label='Language Guide',          command=self.show_language_guide)
+        help_menu.add_command(label='About PHY',               command=self.show_about)
         menubar.add_cascade(label='Help', menu=help_menu)
 
         # Keyboard shortcuts
@@ -171,7 +172,8 @@ class PhyIDE:
         tk.Button(toolbar, text='Save',   command=self.save_file, **flat).pack(side='left', padx=1)
 
         tk.Frame(toolbar, **sep_style).pack(side='left', fill='y', padx=6, pady=2)
-        tk.Button(toolbar, text='Function Reference', command=self.show_function_ref, **flat).pack(side='left', padx=1)
+        tk.Button(toolbar, text='Function Reference',      command=self.show_function_ref, **flat).pack(side='left', padx=1)
+        tk.Button(toolbar, text='Values & Types Reference', command=self.show_values_ref,   **flat).pack(side='left', padx=1)
 
     # ── MAIN AREA ────────────────────────────────────
     def _build_main_area(self):
@@ -456,7 +458,7 @@ print converted;
     def show_function_ref(self):
         win = tk.Toplevel(self.root)
         win.title('PHY — Built-in Function Reference')
-        win.geometry('700x540')
+        win.geometry('700x600')
         win.configure(bg=BG_EDITOR)
 
         tk.Label(win, text='Built-in Functions & Unit Conversions',
@@ -467,9 +469,17 @@ print converted;
                        font=FONT_OUTPUT, wrap='word',
                        relief='flat', bd=0, padx=12, pady=8)
         text.pack(fill='both', expand=True, padx=10, pady=(0, 10))
-        text.tag_config('fn',   foreground=FG_BUILTIN, font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
-        text.tag_config('desc', foreground=FG_DEFAULT)
-        text.tag_config('head', foreground=FG_TYPE_KW, font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
+        text.tag_config('fn',      foreground=FG_BUILTIN, font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
+        text.tag_config('desc',    foreground=FG_DEFAULT)
+        text.tag_config('head',    foreground=FG_TYPE_KW,  font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
+        text.tag_config('special', foreground=FG_KEYWORD,  font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
+
+        # if-then-else expression note
+        text.insert('end', '\n── Conditional Expression ─────────────────────────────\n', 'head')
+        text.insert('end', '  if(condition) then expr else expr\n', 'fn')
+        text.insert('end', '    Functional if-then-else — evaluates to a value.\n', 'desc')
+        text.insert('end', '    Both then and else branches are required.\n', 'desc')
+        text.insert('end', '    Operators: ==  !=  >  <  >=  <=  &&  ||\n\n', 'desc')
 
         categories = [
             ('── Mechanics ─────────────────────────────────────────',
@@ -481,22 +491,116 @@ print converted;
              ['ohm_v','ohm_i','coulomb']),
             ('── Thermodynamics ────────────────────────────────────',
              ['heat','ideal_gas_p']),
-            ('── Unit Conversions ──────────────────────────────────',
-             ['km_to_m','m_to_km','cm_to_m','m_to_cm',
-              'g_to_kg','kg_to_g',
-              'celsius_to_k','k_to_celsius',
-              'joules_to_cal','cal_to_joules',
-              'mph_to_ms','ms_to_mph',
-              'n_to_lb','lb_to_n']),
+            ('── Trigonometry ──────────────────────────────────────',
+             ['sin','cos','tan','asin','acos','atan']),
+            ('── Distance Conversions ──────────────────────────────',
+             ['km_to_m','m_to_km','cm_to_m','m_to_cm']),
+            ('── Mass Conversions ──────────────────────────────────',
+             ['g_to_kg','kg_to_g']),
+            ('── Temperature Conversions ───────────────────────────',
+             ['celsius_to_k','k_to_celsius',
+              'c_to_k','k_to_c','c_to_f','f_to_c','f_to_k','k_to_f']),
+            ('── Energy Conversions ────────────────────────────────',
+             ['joules_to_cal','cal_to_joules']),
+            ('── Speed & Force Conversions ─────────────────────────',
+             ['mph_to_ms','ms_to_mph','n_to_lb','lb_to_n']),
         ]
 
         for heading, names in categories:
             text.insert('end', f'\n{heading}\n', 'head')
             for name in names:
+                if name not in BUILTIN_FUNCTIONS:
+                    continue
                 fn = BUILTIN_FUNCTIONS[name]
                 sig = f"{name}({', '.join(fn['params'])})"
                 text.insert('end', f'  {sig}\n', 'fn')
                 text.insert('end', f'    {fn["desc"]}\n\n', 'desc')
+
+        text.config(state='disabled')
+
+        vsb = tk.Scrollbar(win, command=text.yview, bg=BG_SIDEBAR)
+        vsb.place(relx=1.0, rely=0, relheight=1.0, anchor='ne')
+        text.config(yscrollcommand=vsb.set)
+
+    def show_values_ref(self):
+        win = tk.Toplevel(self.root)
+        win.title('PHY — Values & Types Reference')
+        win.geometry('680x620')
+        win.configure(bg=BG_EDITOR)
+
+        tk.Label(win, text='Values & Types Reference',
+                 bg=BG_EDITOR, fg=FG_DEFAULT,
+                 font=('Segoe UI', 12, 'bold'), pady=10).pack()
+
+        text = tk.Text(win, bg=BG_SIDEBAR, fg=FG_DEFAULT,
+                       font=FONT_OUTPUT, wrap='word',
+                       relief='flat', bd=0, padx=12, pady=8)
+        text.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+        text.tag_config('kw',    foreground=FG_TYPE_KW,  font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
+        text.tag_config('ex',    foreground=FG_BUILTIN)
+        text.tag_config('desc',  foreground=FG_DEFAULT)
+        text.tag_config('head',  foreground=FG_KEYWORD,  font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
+        text.tag_config('const', foreground=FG_NUMBER,   font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
+        text.tag_config('unit',  foreground=FG_UNIT,     font=(FONT_OUTPUT[0], FONT_OUTPUT[1], 'bold'))
+
+        # ── Type Keywords ────────────────────────────────────
+        text.insert('end', '── Type Keywords ──────────────────────────────────────\n', 'head')
+        text.insert('end', 'Use these after let or given to label what a variable represents.\n', 'desc')
+        text.insert('end', 'Syntax:  let <type> <name> = <value>;\n\n', 'desc')
+
+        type_entries = [
+            ('mass',     'm',       'Mass',                     'kg',    'let mass m = 70kg;'),
+            ('accel',    'a',       'Acceleration',             'm/s²',  'let accel a = 9.8;'),
+            ('velocity', 'v',       'Velocity / Speed',         'm/s',   'let velocity v = 30;'),
+            ('length',   'd or h',  'Distance / Height / Size', 'm',     'let length d = 15meter;'),
+            ('force',    'F',       'Force',                    'N',     'let force F = newton(m, a);'),
+            ('energy',   'E or KE', 'Energy / Work',            'J',     'let energy KE = ke(m, v);'),
+            ('power',    'P',       'Power',                    'W',     'let power P = 100W;'),
+            ('temp',     'T',       'Temperature',              'K/C/F', 'let temp T = 300K;'),
+            ('work',     'W',       'Work done',                'J',     'let work W = work(F, d);'),
+            ('time',     't',       'Time',                     's',     'let time t = 5;'),
+        ]
+
+        for kw, common, full_name, si_unit, example in type_entries:
+            text.insert('end', f'  {kw}', 'kw')
+            text.insert('end', f'  —  {full_name}  (SI unit: {si_unit},  common var: {common})\n', 'desc')
+            text.insert('end', f'    e.g.  {example}\n\n', 'ex')
+
+        # ── Available Units ──────────────────────────────────
+        text.insert('end', '── Units  (attach directly to a number, no space) ─────\n', 'head')
+        unit_entries = [
+            ('kg',    'Kilograms'),
+            ('g',     'Grams'),
+            ('N',     'Newtons'),
+            ('J',     'Joules'),
+            ('W',     'Watts'),
+            ('meter', 'Meters'),
+            ('secs',  'Seconds'),
+            ('K',     'Kelvin'),
+            ('C',     'Celsius'),
+            ('F',     'Fahrenheit'),
+            ('rad',   'Radians'),
+            ('k',     'Generic constant / old Kelvin shorthand'),
+        ]
+        for sym, name in unit_entries:
+            text.insert('end', f'  {sym}', 'unit')
+            text.insert('end', f'  —  {name}\n', 'desc')
+
+        # ── Pre-loaded Constants ─────────────────────────────
+        text.insert('end', '\n── Pre-loaded Constants  (use directly, no declaration needed) ─\n', 'head')
+        const_entries = [
+            ('pi',   '3.14159…',       None,          'Mathematical constant π'),
+            ('e',    '2.71828…',       None,          'Euler\'s number'),
+            ('grav', '9.81',           'm/s²',        'Gravitational acceleration on Earth'),
+            ('c',    '299,792,458',    'm/s',         'Speed of light'),
+            ('G',    '6.674×10⁻¹¹',   'm³/kg/s²',   'Universal gravitational constant'),
+            ('h',    '6.626×10⁻³⁴',   'J·s',         'Planck\'s constant'),
+            ('k_b',  '1.381×10⁻²³',   'J/K',         'Boltzmann constant'),
+        ]
+        for name, val, unit, desc in const_entries:
+            u = f'  [{unit}]' if unit else ''
+            text.insert('end', f'  {name}', 'const')
+            text.insert('end', f'  =  {val}{u}  —  {desc}\n', 'desc')
 
         text.config(state='disabled')
 

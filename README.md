@@ -16,16 +16,27 @@ AST (ast_nodes.py): Defines the data structures (nodes) for the Abstract Syntax 
  <br>   Note: (The tests are named valid1-10.phy OR invalid1-5.phy; You can change the test name to whichever you want to try)
 
 ## Grammar:
-  The grammar for PHY is represented in a way that makes sense with how physics problems are traditionally appraoched.
-   <br> &nbsp;&nbsp;&nbsp; program       ::= header? statement*
-   <br> &nbsp;&nbsp;&nbsp; header        ::= "givens" "{" assignment* "}"
-   <br> &nbsp;&nbsp;&nbsp; statement     ::= assignment | print_stmt
-   <br> &nbsp;&nbsp;&nbsp; assignment    ::= ("given" | "let")? type_kw? IDENTIFIER "=" expression ";"
-   <br> &nbsp;&nbsp;&nbsp; type_kw       ::= "mass" | "accel" | "velocity" | "length" | "power" | "temp" | "force"
-   <br> &nbsp;&nbsp;&nbsp; print_stmt    ::= "print" expression ";"
-   <br> &nbsp;&nbsp;&nbsp; expression    ::= term (("+" | "-") term)*
-   <br> &nbsp;&nbsp;&nbsp; term          ::= factor (("\*" | "/") factor)*
-   <br> &nbsp;&nbsp;&nbsp; factor        ::= (NUMBER | TIME) UNIT? | IDENTIFIER | "(" expression ")"
+  The grammar for PHY is represented in a way that makes sense with how physics problems are traditionally approached.
+
+   <br> &nbsp;&nbsp;&nbsp; program        ::= header? statement\*
+   <br> &nbsp;&nbsp;&nbsp; header         ::= "givens" "{" assignment\* "}"
+   <br> &nbsp;&nbsp;&nbsp; statement      ::= assignment | print_stmt
+   <br> &nbsp;&nbsp;&nbsp; assignment     ::= ("given" | "let")? type_kw? IDENTIFIER "=" expression ";"
+   <br> &nbsp;&nbsp;&nbsp; type_kw        ::= "mass" | "accel" | "velocity" | "length" | "power" | "temp" | "force" | "time" | "energy" | "work"
+   <br> &nbsp;&nbsp;&nbsp; print_stmt     ::= "print" expression ";"
+   <br> &nbsp;&nbsp;&nbsp; expression     ::= if_expr | comparison
+   <br> &nbsp;&nbsp;&nbsp; if_expr        ::= "if" "(" expression ")" "then" expression "else" expression
+   <br> &nbsp;&nbsp;&nbsp; comparison     ::= arith_expr (("==" | "!=" | ">" | "<" | ">=" | "<=" | "&&" | "\|\|") arith_expr)\*
+   <br> &nbsp;&nbsp;&nbsp; arith_expr     ::= term (("+" | "-") term)\*
+   <br> &nbsp;&nbsp;&nbsp; term           ::= factor (("\*" | "/") factor)\*
+   <br> &nbsp;&nbsp;&nbsp; factor         ::= if_expr | func_call | (NUMBER | TIME) UNIT? | IDENTIFIER | "(" expression ")"
+   <br> &nbsp;&nbsp;&nbsp; func_call      ::= IDENTIFIER "(" (expression ("," expression)\*)? ")"
+   <br> &nbsp;&nbsp;&nbsp; UNIT           ::= "kg" | "g" | "N" | "J" | "W" | "meter" | "secs" | "K" | "C" | "F" | "rad" | "k"
+
+   #### Notes:
+   - **if-then-else is an expression**, not a statement — it always evaluates to a value and both `then` and `else` branches are required. This follows pure functional programming rules.
+   - **Function calls** are built-in only. User-defined functions are not supported.
+   - **Pre-loaded constants** (`pi`, `e`, `grav`, `c`, `G`, `h`, `k_b`) are available without declaration.
 
 ## How It Should Look:
   ### <br> &nbsp;&nbsp; Valid: <br> &nbsp;&nbsp;&nbsp; <img width="389" height="108" alt="image" src="https://github.com/user-attachments/assets/36342121-e493-4202-8062-64060fba47fd" />

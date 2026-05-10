@@ -1,7 +1,7 @@
 from ast_nodes import (
     Program, AssignmentStatement, PrintStatement,
     BinaryExpression, IntegerLiteral, Identifier, FunctionCall,
-    IfStatement
+    IfExpression
 )
 
 class Parser:
@@ -43,9 +43,6 @@ class Parser:
             self.eat('SEMICOLON')
             return PrintStatement(e)
 
-        if t == 'IF':
-            return self.parse_if()
-
         return self.parse_assignment()
 
     def parse_assignment(self):
@@ -63,22 +60,6 @@ class Parser:
         self.eat('SEMICOLON')
         return AssignmentStatement(Identifier(name), expr, mode, type_kw)
 
-    def parse_if(self):
-        self.eat('IF')
-        self.eat('LPAREN')
-        condition = self.parse_expr()
-        self.eat('RPAREN')
-
-        self.eat('LBRACE')
-
-        statements = []
-        while self.current().type != 'RBRACE':
-            statements.append(self.parse_statement())
-
-        self.eat('RBRACE')
-
-        return IfStatement(condition, statements)
-    
     def parse_arith_expr(self):
         node = self.parse_term()
         while self.current().type in ('PLUS', 'MINUS'):
@@ -141,6 +122,20 @@ class Parser:
                 self.eat('RPAREN')
                 return FunctionCall(name, args)
             return Identifier(name)
+
+        # Functional if-then-else expression
+        # Syntax:  if(condition) then expr else expr
+        # Both branches required — evaluates to a value like any expression
+        if token.type == 'IF':
+            self.eat('IF')
+            self.eat('LPAREN')
+            condition = self.parse_expr()
+            self.eat('RPAREN')
+            self.eat('THEN')
+            then_expr = self.parse_expr()
+            self.eat('ELSE')
+            else_expr = self.parse_expr()
+            return IfExpression(condition, then_expr, else_expr)
 
         # Parenthesised sub-expression
         if token.type == 'LPAREN':
