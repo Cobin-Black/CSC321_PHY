@@ -1,5 +1,5 @@
 # CSC321_PHY
-This is the first part of creating the PHY language for Principle of Programming Languages. This is including Tokenization, Parsing, and making test functions for our program.
+This is the language PHY that was created for Principle of Programming Languages. This is including Tokenization, Parsing, and making test functions for our program.
 
 PHY is a languge to try and help make physics calculations easier for anyone. Since physics has many different variables and formulas this languge it to help make sure to keep track of everything and calculate for the user.
 
